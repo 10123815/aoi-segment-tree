@@ -5,18 +5,18 @@
 // @author ysd
 //////////////////////////////////////////////////////
 
+#include <iostream>
 #include <unordered_map>
 #include <node.h>
 #include "segment_tree.h"
 
-using namespace ysd_bes_aoi;
 using namespace v8;
 
 // A segment tree that maintain the x coordinate of all players.
-SegmentTree x_tree;
+ysd_bes_aoi::SegmentTree x_tree;
 
 // A segment tree that maintain the y coordinate of all players.
-SegmentTree y_tree;
+ysd_bes_aoi::SegmentTree y_tree;
 
 // Store all positions with key of ID.
 std::unordered_map<uint16_t, std::pair<float, float>> positions;
@@ -60,7 +60,7 @@ void Search (const FunctionCallbackInfo<Value>& args)
 	if (x_len < y_len)
 	{
 		// Search at x tree.
-		result = x_tree.Search(x_start, x_end);
+		x_tree.Search(x_start, x_end, result);
 		for (auto id : result)
 		{
 			const std::pair<float, float>& position = positions[id];
@@ -71,7 +71,7 @@ void Search (const FunctionCallbackInfo<Value>& args)
 	else
 	{
 		// Search at y tree.
-		result = y_tree.Search(y_start, y_end);
+		y_tree.Search(y_start, y_end, result);
 		for (auto id : result)
 		{
 			const std::pair<float, float>& position = positions[id];
@@ -122,11 +122,24 @@ void Remove (const FunctionCallbackInfo<Value>& args)
 
 }
 
+void Update (const FunctionCallbackInfo<Value>& args)
+{
+
+}
+
+void Print (const FunctionCallbackInfo<Value>& args)
+{
+	x_tree.Print();
+	// y_tree.Print();
+}
+
 void init (Local<Object> exports)
 {
+	NODE_SET_METHOD(exports, "insert", Insert);
 	NODE_SET_METHOD(exports, "remote", Remove);
 	NODE_SET_METHOD(exports, "search", Search);
-	NODE_SET_METHOD(exports, "insert", Insert);
+	NODE_SET_METHOD(exports, "update", Update);
+	NODE_SET_METHOD(exports, "print",  Print);
 }
 
 NODE_MODULE(aoi_st, init)

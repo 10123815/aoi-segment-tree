@@ -14,7 +14,7 @@ void SegmentTree::SearchRange (const TreeNode* root, const float start, const fl
 {
 
 	// It is a leaf node.
-	if (root->id != NON_ID)
+	if (root->id != kNonID)
 	{
 		if (root->pos_start < end && root->pos_start > start)
 		{
@@ -42,7 +42,7 @@ void SegmentTree::SearchRange (const TreeNode* root, const float start, const fl
 TreeNode* SegmentTree::CreateSegmentTree (float* values, uint16_t* ids, int i, int j)
 {
 	assert(j > i);
-	TreeNode* root = new TreeNode;
+	TreeNode* root = new TreeNode();
 	if (j - i == 1)
 	{
 		root->pos_start = values[i];
@@ -55,7 +55,7 @@ TreeNode* SegmentTree::CreateSegmentTree (float* values, uint16_t* ids, int i, i
 		root->pos_start = values[i];
 		root->pos_end = values[j - 1];
 		// Non-leaf node's id = 10000.
-		root->id = NON_ID;
+		root->id = kNonID;
 		if (mid > i)
 			root->left = CreateSegmentTree(values, ids, i, mid);
 		if (j > mid)
@@ -63,37 +63,6 @@ TreeNode* SegmentTree::CreateSegmentTree (float* values, uint16_t* ids, int i, i
 		root->height = 1 + std::max(root->left->height, root->right->height);
 	}
 	return root;
-}
-
-void SegmentTree::Print (TreeNode *root)
-{
-	std::queue<TreeNode*> q;
-	q.push(root);
-	int count = 1;
-	while (!q.empty())
-	{
-		TreeNode* p = q.front();
-		q.pop();
-		if (p->id == NON_ID)
-		{
-			std::cout << "(" << (p->pos_start) << ", " << (p->pos_end) << "), ";
-			q.push(p->left);
-			q.push(p->right);
-		}
-		else
-		{
-			std::cout << "v: " << (p->pos_start)
-			          << ", i: "  << (p->id)
-			          << ", ";
-		}
-
-		if (--count == 0)
-		{
-			count = q.size();
-			std::cout << std::endl;
-		}
-
-	}
 }
 
 // endregion static method
@@ -107,22 +76,20 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 	// null tree.
 	if (root == nullptr)
 	{
-		root = new TreeNode;
+		root = new TreeNode();
 		root->id = id;
 		root->pos_start = value;
 		return root;
 	}
 
 	// A leaf root.
-	if (root->id != NON_ID)
+	if (root->id != kNonID)
 	{
 		// Two new child nodes.
-		TreeNode* left = new TreeNode;
-		left->pos_end = 0.0f;
+		TreeNode* left = new TreeNode();
 		left->height = 0;
 
-		TreeNode* right = new TreeNode;
-		right->pos_end = 0.0f;
+		TreeNode* right = new TreeNode();
 		right->height = 0;
 		if (root->pos_start < value)
 		{
@@ -146,7 +113,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 		}
 
 		// Change the root to non-leaf node.
-		root->id = NON_ID;
+		root->id = kNonID;
 		// For the leaf node, the pos_start stores the value.
 		root->pos_start = left->pos_start;
 		root->pos_end = right->pos_start;
@@ -164,6 +131,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 		{
 			// Insert left.
 			root->left = InsertNode(id, value, root->left);
+			root->pos_start = root->left->pos_start;
 			uint16_t left_height = root->left->height;
 			uint16_t right_height = root->right->height;
 			assert(left_height - right_height >= -1);
@@ -181,7 +149,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 		else if (value < root->pos_end)
 		{
 			// Two leaf children, insert at left.
-			if (root->left->id != NON_ID && root->right->id != NON_ID)
+			if (root->left->id != kNonID && root->right->id != kNonID)
 			{
 				// Do not need to rotate tree.
 				root->left = InsertNode(id, value, root->left);
@@ -190,7 +158,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			}
 
 			// Left child is a non-leaf node.
-			if (root->left->id == NON_ID && root->right->id != NON_ID)
+			if (root->left->id == kNonID && root->right->id != kNonID)
 			{
 				if (value > root->left->pos_end)
 				{
@@ -207,7 +175,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			}
 
 			// Right child is a non-leaf node.
-			if (root->left->id != NON_ID && root->right->id == NON_ID)
+			if (root->left->id != kNonID && root->right->id == kNonID)
 			{
 				if (value < root->right->pos_start)
 				{
@@ -299,7 +267,11 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 		else
 		{
 			// Insert right.
-			InsertNode(id, value, root->right);
+			root->right = InsertNode(id, value, root->right);
+			if (root->right->pos_end != kNonPosition)
+				root->pos_end = root->right->pos_end;
+			else
+				root->pos_end = root->right->pos_start;
 			uint16_t left_height = root->left->height;
 			uint16_t right_height = root->right->height;
 			assert(right_height - left_height >= -1);
@@ -324,9 +296,9 @@ void SegmentTree::RemoveNode (uint16_t id, float value, TreeNode* root)
 TreeNode* SegmentTree::RotateTreeR (TreeNode* root)
 {
 	// root is a non-leaf node;
-	assert(root->id == NON_ID);
+	assert(root->id == kNonID);
 	auto pn = root->left;
-	assert(pn->id == NON_ID);
+	assert(pn->id == kNonID);
 
 	// Once assign new value to a node's children, the range of the node need to change.
 	root->left = pn->right;
@@ -346,13 +318,16 @@ TreeNode* SegmentTree::RotateTreeR (TreeNode* root)
 TreeNode* SegmentTree::RotateTreeL (TreeNode* root)
 {
 	// root is a non-leaf node;
-	assert(root->id == NON_ID);
+	assert(root->id == kNonID);
 	auto pn = root->right;
-	assert(pn->id == NON_ID);
+	assert(pn->id == kNonID);
 
 	// Once assign new pointer to a node's children, the range of the node need to change.
 	root->right = pn->left;
-	root->pos_end = root->right->pos_end;
+	if (root->right->pos_end != kNonPosition)
+		root->pos_end = root->right->pos_end;
+	else
+		root->pos_end = root->right->pos_start;
 
 	pn->left = root;
 	pn->pos_start = pn->left->pos_start;

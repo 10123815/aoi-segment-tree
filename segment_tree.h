@@ -15,27 +15,34 @@
 namespace ysd_bes_aoi
 {
 
-	#define NON_ID 	10000
-	#define NON_POS	-99999
+	const uint16_t kNonID 		= 10000;
+	const float kNonPosition 	= -99999;
 
 	typedef unsigned short uint16_t;
 
 	struct TreeNode
 	{
-		TreeNode* left = nullptr;
-		TreeNode* right = nullptr;
 
-		// 0 if leaf node
-		uint16_t height = 0;
+		TreeNode ( ) :
+			id (kNonID), pos_start (kNonPosition), pos_end (kNonPosition) , height (0)
+		{
 
-		// If this is a leaf node, this property will be the value of X/Y coordinate.
-		float pos_start = NON_POS;
+		}
 
-		// If this is a leaf node, this property will be 0.0f.
-		float pos_end = NON_POS;
+		TreeNode* left;
+		TreeNode* right;
 
 		// If this is a leaf node, this property will be 10000.
-		uint16_t id = NON_ID; 
+		uint16_t id;
+
+		// If this is a leaf node, this property will be the value of X/Y coordinate.
+		float pos_start;
+
+		// If this is a leaf node, this property will be 0.0f.
+		float pos_end;
+
+		// 0 if leaf node
+		uint16_t height;
 	};
 
 	///////////////////////////////////////////////////
@@ -47,36 +54,38 @@ namespace ysd_bes_aoi
 	class SegmentTree final
 	{
 	public:
-		SegmentTree();
-		~SegmentTree();
 
+		// Create segment tree with given coordinates and IDs.
+		// @param[in]	i 	Index of the start position in the input data.
+		// @param[in]	j 	Index after the start position in the input data.
 		static TreeNode* CreateSegmentTree (float* values, uint16_t* ids, int i, int j);
 
-		static void Print (TreeNode* root);
+		void Print ( )
+		{
+			PrintLayer(root_);
+		}
 
-		// For a given range [start, end], get ids of 
+		// For a given range [start, end], get ids of
 		// those position that which X/Y coordinate in.
 		// @param[in]	start 	Search range.
 		// @param[in]	end 	Search range.
-		// @return		Search result set.
-		std::vector<uint16_t>& Search (const float start, const float end)
+		// @param[out]	result	Search result set.
+		void Search (const float start, const float end, std::vector<uint16_t>& result)
 		{
-			std::vector<uint16_t> result;
-			SearchRange(root_, start, end, &result);
-			return result;
+			SearchRange(root_, start, end, result);
 		}
 
 		// Insert a node with given id and value.
 		// @param[in]	id 		New node's player id.
-		// @param[in]	pos_x	New node's player x coordinate.	
+		// @param[in]	pos_x	New node's player x coordinate.
 		void Insert (uint16_t id, float x_pos)
 		{
-			InsertNode(id, pos_x, root_);
+			root_ = InsertNode(id, x_pos, root_);
 		}
 
 	private:
 
-		// For a given range [start, end], get ids of 
+		// For a given range [start, end], get ids of
 		// those position that which X/Y coordinate in.
 		// @param[in]		root 	The tree we search.
 		// @param[in]		start 	Search range.
@@ -96,7 +105,7 @@ namespace ysd_bes_aoi
 
 		// Rotate the tree right.
 		// @param[in] 	root 	The pointer to the unbalance node
-		// @return		New root of the rotated tree.				
+		// @return		New root of the rotated tree.
 		TreeNode* RotateTreeR (TreeNode* root);
 
 		// Rotate the tree left.
@@ -104,15 +113,48 @@ namespace ysd_bes_aoi
 		// @return		New root of the rotated tree.
 		TreeNode* RotateTreeL (TreeNode* root);
 
-		// Rotate the tree right than rotate left. 
+		// Rotate the tree right than rotate left.
 		// @param[in] 	root 	The pointer to the unbalance node
 		// @return		New root of the rotated tree.
 		TreeNode* RotateTreeRL (TreeNode* root);
 
-		// Rotate the tree left than rotate right. 
+		// Rotate the tree left than rotate right.
 		// @param[in] 	root 	The pointer to the unbalance node
 		// @return		New root of the rotated tree.
 		TreeNode* RotateTreeLR (TreeNode* root);
+
+		// Print by layer.
+		void PrintLayer (TreeNode *root)
+		{
+			std::queue<TreeNode*> q;
+			q.push(root);
+			int count = 1;
+			while (!q.empty())
+			{
+				TreeNode* p = q.front();
+				q.pop();
+				if (p->id == kNonID)
+				{
+					std::cout << "(" << (p->pos_start) << ", " << (p->pos_end) << "), ";
+					q.push(p->left);
+					q.push(p->right);
+				}
+				else
+				{
+					std::cout << "v: " << (p->pos_start)
+					          // << ", i: "  << (p->id)
+					          << ", ";
+				}
+
+				if (--count == 0)
+				{
+					count = q.size();
+					std::cout << std::endl;
+				}
+
+			}
+			std::cout << std::endl;
+		}
 
 		TreeNode* root_;
 
