@@ -69,7 +69,7 @@ namespace ysd_bes_aoi
 		// Insert a node with given id and value.
 		// @param[in]	id 		New node's player id.
 		// @param[in]	pos_x	New node's player x coordinate.	
-		void Insert (uint16_t id, float pos_x)
+		void Insert (uint16_t id, float x_pos)
 		{
 			InsertNode(id, pos_x, root_);
 		}
