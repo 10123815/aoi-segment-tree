@@ -104,6 +104,216 @@ void SegmentTree::Print (TreeNode *root)
 TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 {
 
+	// null tree.
+	if (root == nullptr)
+	{
+		root = new TreeNode;
+		root->id = id;
+		root->pos_start = value;
+		return root;
+	}
+
+	// A leaf root.
+	if (root->id != NON_ID)
+	{
+		// Two new child nodes.
+		TreeNode* left = new TreeNode;
+		left->pos_end = 0.0f;
+		left->height = 0;
+
+		TreeNode* right = new TreeNode;
+		right->pos_end = 0.0f;
+		right->height = 0;
+		if (root->pos_start < value)
+		{
+			// The left node is equal to the root.
+			left->id = root->id;
+			left->pos_start = root->pos_start;
+
+			// The right node is the new inserted node.
+			right->id = id;
+			right->pos_start = value;
+		}
+		else
+		{
+			// The left node is the new inserted node.
+			left->id = id;
+			left->pos_start = value;
+
+			// The right node is equal to the root.
+			right->id = root->id;
+			right->pos_start = root->pos_start;
+		}
+
+		// Change the root to non-leaf node.
+		root->id = NON_ID;
+		// For the leaf node, the pos_start stores the value.
+		root->pos_start = left->pos_start;
+		root->pos_end = right->pos_start;
+		root->left = left;
+		root->right = right;
+		root->height = 1;
+		return root;
+	}
+	// A non-leaf root
+	else
+	{
+
+		// Out of range of left node.
+		if (value < root->pos_start)
+		{
+			// Insert left.
+			root->left = InsertNode(id, value, root->left);
+			uint16_t left_height = root->left->height;
+			uint16_t right_height = root->right->height;
+			assert(left_height - right_height >= -1);
+			if (left_height - right_height > 1)
+			{
+				return RotateTreeR(root);
+			}
+			else
+			{
+				root->height = std::max(left_height, right_height) + 1;
+				return root;
+			}
+		}
+		// In the range.
+		else if (value < root->pos_end)
+		{
+			// Two leaf children, insert at left.
+			if (root->left->id != NON_ID && root->right->id != NON_ID)
+			{
+				// Do not need to rotate tree.
+				root->left = InsertNode(id, value, root->left);
+				root->height += 1;
+				return root;
+			}
+
+			// Left child is a non-leaf node.
+			if (root->left->id == NON_ID && root->right->id != NON_ID)
+			{
+				if (value > root->left->pos_end)
+				{
+					root->right = InsertNode(id, value, root->right);
+					// Now height of right is equal to height of left.
+					return root;
+				}
+				else
+				{
+					root->left = InsertNode(id, value, root->left);
+					// Rotate! Do not need to adjust height.
+					return RotateTreeR(root);
+				}
+			}
+
+			// Right child is a non-leaf node.
+			if (root->left->id != NON_ID && root->right->id == NON_ID)
+			{
+				if (value < root->right->pos_start)
+				{
+					root->left = InsertNode(id, value, root->left);
+					return root;
+				}
+				else
+				{
+					root->right = InsertNode(id, value, root->right);
+					// Rotate!!
+					return RotateTreeRL(root);
+				}
+			}
+
+			// Two non-leaf children
+			// Insert to the child which range contains the value.
+			uint16_t left_end = root->left->pos_end;
+			uint16_t right_start = root->right->pos_start;
+			if (value < left_end)
+			{
+				// Insert to left child.
+				root->left = InsertNode(id, value, root->left);
+				if (root->left->height - root->right->height > 1)
+				{
+					// Unbalance!! Rotate!!
+					if (root->left->left->height > root->left->right->height)
+					{
+						// Left child is higher, rotate root to right.
+						return RotateTreeR(root);
+					}
+					else
+					{
+						return RotateTreeLR(root);
+					}
+				}
+				else
+				{
+					root->height = std::max(root->left->height, root->right->height) + 1;
+					return root;
+				}
+			}
+			else if (value > right_start)
+			{
+				// Insert to right child.
+				root->right = InsertNode(id, value, root->right);
+				if (root->right->height - root->left->height > 1)
+				{
+					// Unbalance!! Rotate!!
+					if (root->right->right->height > root->right->left->height)
+					{
+						// Right child is higher, rotate root to left.
+						return RotateTreeL(root);
+					}
+					else
+					{
+						return RotateTreeRL(root);
+					}
+				}
+				else
+				{
+					root->height = std::max(root->left->height, root->right->height) + 1;
+					return root;
+				}
+			}
+			// Insert to the less high one if the value is out of range.
+			else
+			{
+				uint16_t lh = root->left->height;
+				uint16_t rh = root->right->height;
+				if (lh < rh)
+				{
+					root->left = InsertNode(id, value, root->left);
+					// height = max(rh, lh + 1)
+				}
+				else if (lh > rh)
+				{
+					root->right = InsertNode(id, value, root->right);
+					// height = max(lh, rh + 1)
+				}
+				else
+				{
+					root->left = InsertNode(id, value, root->left);
+					root->height = root->left->height + 1;
+				}
+				return root;
+			}
+		}
+		// Out of range of right node.
+		else
+		{
+			// Insert right.
+			InsertNode(id, value, root->right);
+			uint16_t left_height = root->left->height;
+			uint16_t right_height = root->right->height;
+			assert(right_height - left_height >= -1);
+			if (right_height - left_height > 1)
+			{
+				return RotateTreeL(root);
+			}
+			else
+			{
+				root->height = std::max(left_height, right_height) + 1;
+				return root;
+			}
+		}
+	}
 }
 
 void SegmentTree::RemoveNode (uint16_t id, float value, TreeNode* root)
