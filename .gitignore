@@ -1,0 +1,5 @@
+# Sublime Text project file.
+*.sublime*
+
+# nodejs C++ addon compile folder.
+/build
