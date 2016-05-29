@@ -70,7 +70,7 @@ TreeNode* SegmentTree::CreateSegmentTree (float* values, uint16_t* ids, int i, i
 // region private method
 
 
-TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
+TreeNode* SegmentTree::InsertNode (TreeNode* root, uint16_t id, float value)
 {
 
 	// null tree.
@@ -130,7 +130,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 		if (value < root->pos_start)
 		{
 			// Insert left.
-			root->left = InsertNode(id, value, root->left);
+			root->left = InsertNode(root->left, id, value);
 			root->pos_start = root->left->pos_start;
 			uint16_t left_height = root->left->height;
 			uint16_t right_height = root->right->height;
@@ -152,7 +152,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			if (root->left->id != kNonID && root->right->id != kNonID)
 			{
 				// Do not need to rotate tree.
-				root->left = InsertNode(id, value, root->left);
+				root->left = InsertNode(root->left, id, value);
 				root->height += 1;
 				return root;
 			}
@@ -162,13 +162,13 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			{
 				if (value > root->left->pos_end)
 				{
-					root->right = InsertNode(id, value, root->right);
+					root->right = InsertNode(root->right, id, value);
 					// Now height of right is equal to height of left.
 					return root;
 				}
 				else
 				{
-					root->left = InsertNode(id, value, root->left);
+					root->left = InsertNode(root->left, id, value);
 					// Rotate! Do not need to adjust height.
 					return RotateTreeR(root);
 				}
@@ -179,12 +179,12 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			{
 				if (value < root->right->pos_start)
 				{
-					root->left = InsertNode(id, value, root->left);
+					root->left = InsertNode(root->left, id, value);
 					return root;
 				}
 				else
 				{
-					root->right = InsertNode(id, value, root->right);
+					root->right = InsertNode(root->right, id, value);
 					// Rotate!!
 					return RotateTreeRL(root);
 				}
@@ -197,7 +197,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			if (value < left_end)
 			{
 				// Insert to left child.
-				root->left = InsertNode(id, value, root->left);
+				root->left = InsertNode(root->left, id, value);
 				if (root->left->height - root->right->height > 1)
 				{
 					// Unbalance!! Rotate!!
@@ -220,7 +220,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 			else if (value > right_start)
 			{
 				// Insert to right child.
-				root->right = InsertNode(id, value, root->right);
+				root->right = InsertNode(root->right, id, value);
 				if (root->right->height - root->left->height > 1)
 				{
 					// Unbalance!! Rotate!!
@@ -247,17 +247,17 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 				uint16_t rh = root->right->height;
 				if (lh < rh)
 				{
-					root->left = InsertNode(id, value, root->left);
+					root->left = InsertNode(root->left, id, value);
 					// height = max(rh, lh + 1)
 				}
 				else if (lh > rh)
 				{
-					root->right = InsertNode(id, value, root->right);
+					root->right = InsertNode(root->right, id, value);
 					// height = max(lh, rh + 1)
 				}
 				else
 				{
-					root->left = InsertNode(id, value, root->left);
+					root->left = InsertNode(root->left, id, value);
 					root->height = root->left->height + 1;
 				}
 				return root;
@@ -267,7 +267,7 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 		else
 		{
 			// Insert right.
-			root->right = InsertNode(id, value, root->right);
+			root->right = InsertNode(root->right, id, value);
 			if (root->right->pos_end != kNonPosition)
 				root->pos_end = root->right->pos_end;
 			else
@@ -288,7 +288,91 @@ TreeNode* SegmentTree::InsertNode (uint16_t id, float value, TreeNode* root)
 	}
 }
 
-void SegmentTree::RemoveNode (uint16_t id, float value, TreeNode* root)
+TreeNode* SegmentTree::RemoveNode (TreeNode* root, uint16_t id, float value)
+{
+	// Left child is a leaf node.
+	if (root->left->id == id)
+	{
+		TreeNode* pn = root->right;
+		delete root->left;
+		delete root;
+		return pn;
+	}
+	else if (root->right->id == id)
+	{
+		TreeNode* pn = root->left;
+		delete root->right;
+		delete root;
+		return pn;
+	}
+
+	// In range.
+	if (value <= root->pos_end && value >= root->pos_start)
+	{
+		// The removed node is in the left child.
+		if (value <= root->left->pos_end)
+		{
+			root->left = RemoveNode(root->left, id, value);
+
+			// Unbalance!! Rotate!!
+			if (root->right->height - root->left->height > 1)
+			{
+				if (root->right->left->height > root->right->right->height)
+				{
+					return RotateTreeRL(root);
+				}
+				else
+				{
+					return RotateTreeL(root);
+				}
+			}
+			else
+			{
+				root->pos_start = root->left->pos_start;
+				root->height = 1 + std::max(root->left->height, root->right->height);
+				return root;
+			}
+		}
+		// The removed node is in the right child.
+		else if (value >= root->right->pos_start)
+		{
+			root->right = RemoveNode(root->right, id, value);
+
+			// Unbalance!! Rotate!!
+			if (root->left->height - root->right->height > 1)
+			{
+				if (root->left->right->height > root->left->right->height)
+				{
+					return RotateTreeLR(root);
+				}
+				else
+				{
+					return RotateTreeR(root);
+				}
+			}
+			else
+			{
+				if (root->right->id != kNonID)
+				{
+					// A non-leaf child.
+					root->pos_end = root->right->pos_start;
+				}
+				else
+				{
+					root->pos_end = root->right->pos_end;
+				}
+				root->height = 1 + std::max(root->left->height, root->right->height);
+				return root;
+			}
+		}
+	}
+
+	// The given value is out of range.
+	return nullptr;
+
+}
+
+void SegmentTree::UpdateNode (TreeNode* root, uint16_t id, float origin_val, float current_val)
 {
 
 }

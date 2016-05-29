@@ -60,6 +60,7 @@ namespace ysd_bes_aoi
 		// @param[in]	j 	Index after the start position in the input data.
 		static TreeNode* CreateSegmentTree (float* values, uint16_t* ids, int i, int j);
 
+		// Print the tree by layer.
 		void Print ( )
 		{
 			PrintLayer(root_);
@@ -72,15 +73,41 @@ namespace ysd_bes_aoi
 		// @param[out]	result	Search result set.
 		void Search (const float start, const float end, std::vector<uint16_t>& result)
 		{
+			if (root_ == nullptr)
+			{
+				return;
+			}
+
 			SearchRange(root_, start, end, result);
 		}
 
 		// Insert a node with given id and value.
 		// @param[in]	id 		New node's player id.
-		// @param[in]	pos_x	New node's player x coordinate.
-		void Insert (uint16_t id, float x_pos)
+		// @param[in]	value	New node's player X/Y coordinate.
+		void Insert (uint16_t id, float value)
 		{
-			root_ = InsertNode(id, x_pos, root_);
+			root_ = InsertNode(root_, id, value);
+		}
+
+		// Remove a node with given id.
+		// @param[in]	id 		Removed node's player id.
+		// @param[in]	value 	X/Y coordinate to search the node.
+		bool Remove (uint16_t id, float value)
+		{
+			if (id == root_->id)
+			{
+				// The last node.
+				delete root_;
+				root_ = nullptr;
+				return true;
+			}
+			TreeNode* new_root = RemoveNode(root_, id, value);
+			if (new_root != nullptr)
+			{
+				root_ = new_root;
+				return true;
+			}
+			return false;
 		}
 
 	private:
@@ -94,14 +121,15 @@ namespace ysd_bes_aoi
 		void SearchRange (const TreeNode* root, const float start, const float end, std::vector<uint16_t>& result);
 
 		// Update the value of a node with given id
-		void Update (uint16_t id, float value);
+		void UpdateNode (TreeNode* root, uint16_t id, float origin_val, float current_val);
 
 		// Insert a node with given id and value.
 		// @return 	Pointer to the inserted tree.
-		TreeNode* InsertNode (uint16_t id, float value, TreeNode* root);
+		TreeNode* InsertNode (TreeNode* root, uint16_t id, float value);
 
 		// Remove a node with given id and value.
-		void RemoveNode (uint16_t id, float value, TreeNode* root);
+		// @return 	Pointer to the handled node.
+		TreeNode* RemoveNode (TreeNode* root, uint16_t id, float value);
 
 		// Rotate the tree right.
 		// @param[in] 	root 	The pointer to the unbalance node

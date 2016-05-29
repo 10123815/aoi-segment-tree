@@ -86,9 +86,9 @@ void Search (const FunctionCallbackInfo<Value>& args)
 
 // Add a new player to the game scene.
 // The input arguments are passed using the "args".
-// @param	args[0]		The id of the new player.
-// @param	args[1] 	The x coordinate of the player's position.
-// @param	args[2] 	The y coordinate of the player's position.
+// @param[in]	args[0]		The id of the new player.
+// @param[in]	args[1] 	The x coordinate of the player's position.
+// @param[in]	args[2] 	The y coordinate of the player's position.
 void Insert (const FunctionCallbackInfo<Value>& args)
 {
 	Isolate* isolate = args.GetIsolate();
@@ -113,13 +113,43 @@ void Insert (const FunctionCallbackInfo<Value>& args)
 	float x_pos = args[1]->NumberValue();
 	float y_pos = args[2]->NumberValue();
 
+	positions[id] = std::make_pair(x_pos, y_pos);
 	x_tree.Insert(id, x_pos);
 	y_tree.Insert(id, y_pos);
 }
 
+// Remove a player from the game scene.
+// The input arguments are passed using the "args".
+// @param[in]	args[0]		The id of the removed player.
+// @param[out]	args		If the remove is successful?
 void Remove (const FunctionCallbackInfo<Value>& args)
 {
+	Isolate* isolate = args.GetIsolate();
 
+	// Check the number of argiments passed.
+	if (args.Length() != 1)
+	{
+		isolate->ThrowException(Exception::Error(
+		                            String::NewFromUtf8(isolate, "Wrong number of arguments")));
+		return;
+	}
+
+	// Check the argument types.
+	if (!args[0]->IsNumber())
+	{
+		isolate->ThrowException(Exception::TypeError(
+		                            String::NewFromUtf8(isolate, "Wrong types of arguments")));
+		return;
+	}
+
+	uint16_t id = args[0]->NumberValue();
+	float x_pos = positions[id].first;
+	float y_pos = positions[id].second;
+
+	bool v = x_tree.Remove(id, x_pos) && y_tree.Remove(id, y_pos);
+	positions.erase(id);
+
+	args.GetReturnValue().Set(v);
 }
 
 void Update (const FunctionCallbackInfo<Value>& args)
@@ -127,16 +157,60 @@ void Update (const FunctionCallbackInfo<Value>& args)
 
 }
 
+// Print the segment trees by layer.
+// The input arguments are passed using the "args".
+// @param[in]	args[0]		If print x coordinate. Can be NULL.
+// @param[in]	args[1]		If print y coordinate. Can be NULL.
 void Print (const FunctionCallbackInfo<Value>& args)
 {
-	x_tree.Print();
-	// y_tree.Print();
+	Isolate* isolate = args.GetIsolate();
+
+	if (args.Length() > 2)
+	{
+	}
+
+	// Check the argument types.
+	if (args.Length() == 0)
+	{
+		x_tree.Print();
+		y_tree.Print();
+	}
+	else if (args.Length() == 1)
+	{
+		if (!args[0]->IsBoolean())
+		{
+			isolate->ThrowException(Exception::TypeError(
+			                            String::NewFromUtf8(isolate, "Wrong types of arguments")));
+			return;
+		}
+		if (args[0]->BooleanValue())
+			x_tree.Print();
+	}
+	else if (args.Length() == 2)
+	{
+		if (!args[0]->IsBoolean() || !args[1]->IsBoolean())
+		{
+			isolate->ThrowException(Exception::TypeError(
+			                            String::NewFromUtf8(isolate, "Wrong types of arguments")));
+			return;
+		}
+		if (args[0]->BooleanValue())
+			x_tree.Print();
+		if (args[1]->BooleanValue())
+			y_tree.Print();
+	}
+	else
+	{
+		isolate->ThrowException(Exception::Error(
+		                            String::NewFromUtf8(isolate, "Wrong number of arguments")));
+		return;
+	}
 }
 
 void init (Local<Object> exports)
 {
 	NODE_SET_METHOD(exports, "insert", Insert);
-	NODE_SET_METHOD(exports, "remote", Remove);
+	NODE_SET_METHOD(exports, "remove", Remove);
 	NODE_SET_METHOD(exports, "search", Search);
 	NODE_SET_METHOD(exports, "update", Update);
 	NODE_SET_METHOD(exports, "print",  Print);
