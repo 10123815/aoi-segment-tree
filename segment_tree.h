@@ -18,8 +18,6 @@ namespace ysd_bes_aoi
 	const uint16_t kNonID 		= 10000;
 	const float kNonPosition 	= -99999;
 
-	typedef unsigned short uint16_t;
-
 	struct TreeNode
 	{
 
@@ -110,6 +108,26 @@ namespace ysd_bes_aoi
 			return false;
 		}
 
+		// Change a node's value with the given id.
+		// @param[in]	id 		Changed node's player id.
+		// @param[in]	cur_val	Changed node's current value that used to find it in the tree.
+		// @param[in]	new_val The new value after update.
+		bool Update (uint16_t id, float cur_val, float new_val)
+		{
+			if (cur_val > root_->pos_end || cur_val < root_->pos_start)
+			{
+				return false;
+			}
+
+			TreeNode* new_root = UpdateNode(root_, id, cur_val, new_val);
+			if (new_root != nullptr)
+			{
+				root_ = new_root;
+				return true;
+			}
+			return false;
+		}
+
 	private:
 
 		// For a given range [start, end], get ids of
@@ -121,7 +139,7 @@ namespace ysd_bes_aoi
 		void SearchRange (const TreeNode* root, const float start, const float end, std::vector<uint16_t>& result);
 
 		// Update the value of a node with given id
-		void UpdateNode (TreeNode* root, uint16_t id, float origin_val, float current_val);
+		TreeNode* UpdateNode (TreeNode* root, uint16_t id, float cur_val, float new_val);
 
 		// Insert a node with given id and value.
 		// @return 	Pointer to the inserted tree.
@@ -163,14 +181,14 @@ namespace ysd_bes_aoi
 				q.pop();
 				if (p->id == kNonID)
 				{
-					std::cout << "(" << (p->pos_start) << ", " << (p->pos_end) << "), ";
+					std::cout << "(" << (p->pos_start) << "," << (p->pos_end) << "), ";
 					q.push(p->left);
 					q.push(p->right);
 				}
 				else
 				{
-					std::cout << "v: " << (p->pos_start)
-					          // << ", i: "  << (p->id)
+					std::cout << "v:" << (p->pos_start)
+					          << "i:"  << (p->id)
 					          << ", ";
 				}
 
@@ -181,7 +199,6 @@ namespace ysd_bes_aoi
 				}
 
 			}
-			std::cout << std::endl;
 		}
 
 		TreeNode* root_;

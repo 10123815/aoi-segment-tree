@@ -8,32 +8,6 @@
 using namespace ysd_bes_aoi;
 
 // region public method
-
-// Search the tree recusively to find the position in the range and push the id in result.
-void SegmentTree::SearchRange (const TreeNode* root, const float start, const float end, std::vector<uint16_t>& result)
-{
-
-	// It is a leaf node.
-	if (root->id != kNonID)
-	{
-		if (root->pos_start < end && root->pos_start > start)
-		{
-			result.push_back(root->id);
-		}
-		return;
-	}
-
-	if (root->pos_start > end || root->pos_end < start)
-	{
-		// The two range have no coincident area.
-		return;
-	}
-
-	SearchRange(root->left, start, end, result);
-	SearchRange(root->right, start, end, result);
-
-}
-
 // endregion public method
 
 // region static method
@@ -69,6 +43,30 @@ TreeNode* SegmentTree::CreateSegmentTree (float* values, uint16_t* ids, int i, i
 
 // region private method
 
+// Search the tree recusively to find the position in the range and push the id in result.
+void SegmentTree::SearchRange (const TreeNode* root, const float start, const float end, std::vector<uint16_t>& result)
+{
+
+	// It is a leaf node.
+	if (root->id != kNonID)
+	{
+		if (root->pos_start < end && root->pos_start > start)
+		{
+			result.push_back(root->id);
+		}
+		return;
+	}
+
+	if (root->pos_start > end || root->pos_end < start)
+	{
+		// The two range have no coincident area.
+		return;
+	}
+
+	SearchRange(root->left, start, end, result);
+	SearchRange(root->right, start, end, result);
+
+}
 
 TreeNode* SegmentTree::InsertNode (TreeNode* root, uint16_t id, float value)
 {
@@ -372,9 +370,112 @@ TreeNode* SegmentTree::RemoveNode (TreeNode* root, uint16_t id, float value)
 
 }
 
-void SegmentTree::UpdateNode (TreeNode* root, uint16_t id, float origin_val, float current_val)
+TreeNode* SegmentTree::UpdateNode (TreeNode* root, uint16_t id, float cur_val, float new_val)
 {
+	// Out of range.
+	if (cur_val < root->pos_start || cur_val > root->pos_start)
+	{
+		return nullptr;
+	}
 
+	// Find it!
+	// Height do not need to change.
+	if (root->left->id == id)
+	{
+		if (new_val <= root->right->pos_start)
+		{
+			root->left->pos_start = new_val;
+			root->pos_start = new_val;
+			return root;
+		}
+		// The new value is big than the current right node.
+		else
+		{
+			// Right child is a leaf node.
+			if (root->right->id != kNonID)
+			{
+				root->left->pos_start = new_val;
+				// Exchange two children.
+				auto pn = root->left;
+				root->left = root->right;
+				root->right = pn;
+				// Set range of the node.
+				root->pos_start = root->left->pos_start;
+				root->pos_end = root->right->pos_start;
+				return root;
+			}
+			// Right child is a non-leaf node
+			else
+			{
+				if (new_val <= root->right->pos_end)
+				{
+					// Exchange node's data.
+					uint16_t old_lid = root->left->id;
+					root->left->pos_start = root->right->pos_start;
+					root->left->id = root->right->left->id;
+					root->right->pos_start = new_val;
+					root->right->left->pos_start = new_val;
+					root->right->left->id = old_lid;
+					// Set range of the root.
+					root->pos_start = root->left->pos_start;
+					root->pos_end = root->right->pos_end;
+					return root;
+				}
+				else
+				{
+					root->left->pos_start = new_val;
+					// Exchange two children.
+					auto pn = root->left;
+					root->left = root->right;
+					root->right = pn;
+					// Set range of the root.
+					root->pos_start = root->left->pos_start;
+					root->pos_end = root->right->pos_start;
+					return root;
+				}
+			}
+		}
+	}
+	else if (root->right->id == id)
+	{
+		// TODO(ysd): If the right child is the update node.
+	}
+
+	// The update node is in left child.
+	if (cur_val <= root->left->pos_end)
+	{
+		// The node after update is still in left child.
+		if (new_val <= root->right->pos_start)
+		{
+			root->left = UpdateNode(root->left, id, cur_val, new_val);
+			root->pos_start = root->left->pos_start;
+			return root;
+		}
+		else
+		{
+			root = RemoveNode(root, id, cur_val);
+			return InsertNode(root, id, new_val);
+		}
+	}
+	// The update node is in right child.
+	else if (cur_val >= root->right->pos_start)
+	{
+		// The node after update is still in right node.
+		if (new_val >= root->left->pos_start)
+		{
+			root->right = UpdateNode(root->right, id, cur_val, new_val);
+			root->pos_end = root->right->pos_end;
+			return root;
+		}
+		else
+		{
+			root = RemoveNode(root, id, cur_val);
+			return InsertNode(root, id, new_val);
+		}
+	}
+
+	// Out of range.
+	return nullptr;
 }
 
 TreeNode* SegmentTree::RotateTreeR (TreeNode* root)
