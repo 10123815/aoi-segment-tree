@@ -50,7 +50,7 @@ void SegmentTree::SearchRange (const TreeNode* root, const float start, const fl
 	// It is a leaf node.
 	if (root->id != kNonID)
 	{
-		if (root->pos_start < end && root->pos_start > start)
+		if (root->pos_start <= end && root->pos_start >= start)
 		{
 			result.push_back(root->id);
 		}
@@ -373,7 +373,7 @@ TreeNode* SegmentTree::RemoveNode (TreeNode* root, uint16_t id, float value)
 TreeNode* SegmentTree::UpdateNode (TreeNode* root, uint16_t id, float cur_val, float new_val)
 {
 	// Out of range.
-	if (cur_val < root->pos_start || cur_val > root->pos_start)
+	if (cur_val < root->pos_start || cur_val > root->pos_end)
 	{
 		return nullptr;
 	}
@@ -438,8 +438,65 @@ TreeNode* SegmentTree::UpdateNode (TreeNode* root, uint16_t id, float cur_val, f
 	}
 	else if (root->right->id == id)
 	{
-		// TODO(ysd): If the right child is the update node.
+		// Left child is a leaf node.
+		if (root->left->id != kNonID)
+		{
+			if (root->left->pos_start <= new_val)
+			{
+				root->right->pos_start = new_val;
+				root->pos_end = new_val;
+			}
+			else
+			{
+				root->right->pos_start = new_val;
+				// Exchange two children.
+				auto pn = root->left;
+				root->left = root->right;
+				root->right = pn;
+				// Set range of the node.
+				root->pos_start = root->left->pos_start;
+				root->pos_end = root->right->pos_start;
+			}
+			return root;
+		}
+		// Right child is a non-leaf node
+		else
+		{
+			if (root->left->pos_end <= new_val)
+			{
+				root->right->pos_start = new_val;
+				root->pos_end = new_val;
+				return root;
+			}
+			else if (root->left->pos_start <= new_val)
+			{
+				// Exchange node's data.
+				uint16_t old_lid = root->right->id;
+				root->right->pos_start = root->left->pos_end;
+				root->right->id = root->left->right->id;
+				root->left->pos_end = new_val;
+				root->left->right->pos_start = new_val;
+				root->left->right->id = old_lid;
+				// Set range of the root.
+				root->pos_start = root->left->pos_start;
+				root->pos_end = root->right->pos_start;
+				return root;
+			}
+			else
+			{
+				root->left->pos_start = new_val;
+				// Exchange two children.
+				auto pn = root->left;
+				root->left = root->right;
+				root->right = pn;
+				// Set range of the root.
+				root->pos_start = root->left->pos_start;
+				root->pos_end = root->right->pos_start;
+				return root;
+			}
+		}
 	}
+
 
 	// The update node is in left child.
 	if (cur_val <= root->left->pos_end)

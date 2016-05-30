@@ -152,8 +152,41 @@ void Remove (const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(v);
 }
 
+// Update a player's position.
+// The input arguments are passed using the "args".
+// @param[in]	args[0]		The id of the moved player.
+// @param[in]	args[1] 	The x coordinate of the player's position.
+// @param[in]	args[2] 	The y coordinate of the player's position.
+// @param[out]	args		If the remove is successful?
 void Update (const FunctionCallbackInfo<Value>& args)
 {
+	Isolate* isolate = args.GetIsolate();
+
+	// Check the number of argiments passed.
+	if (args.Length() != 3)
+	{
+		isolate->ThrowException(Exception::Error(
+		                            String::NewFromUtf8(isolate, "Wrong number of arguments")));
+		return;
+	}
+
+	// Check the argument types.
+	if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsNumber())
+	{
+		isolate->ThrowException(Exception::TypeError(
+		                            String::NewFromUtf8(isolate, "Wrong types of arguments")));
+		return;
+	}
+
+	uint16_t id = args[0]->NumberValue();
+	float cur_x_pos = positions[id].first;
+	float cur_y_pos = positions[id].second;
+	float new_x_pos = args[1]->NumberValue();
+	float new_y_pos = args[2]->NumberValue();
+
+	bool v = x_tree.Update(id, cur_x_pos, new_x_pos) && y_tree.Update(id, cur_y_pos, new_y_pos);
+
+	args.GetReturnValue().Set(v);
 
 }
 
