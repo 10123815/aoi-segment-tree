@@ -186,6 +186,9 @@ void Update (const FunctionCallbackInfo<Value>& args)
 
 	bool v = x_tree.Update(id, cur_x_pos, new_x_pos) && y_tree.Update(id, cur_y_pos, new_y_pos);
 
+	positions[id].first = new_x_pos;
+	positions[id].second = new_y_pos;
+
 	args.GetReturnValue().Set(v);
 
 }
