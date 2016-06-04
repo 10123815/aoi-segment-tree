@@ -128,6 +128,17 @@ namespace ysd_bes_aoi
 			return false;
 		}
 
+		bool Range (float* start, float* end) 
+		{
+			if (root_ == nullptr)
+			{
+				return false;
+			}
+			*start = root_->pos_start;
+			*end = root_->pos_end;
+			return true;
+		}
+
 	private:
 
 		// For a given range [start, end], get ids of

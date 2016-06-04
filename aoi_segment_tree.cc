@@ -193,6 +193,26 @@ void Update (const FunctionCallbackInfo<Value>& args)
 
 }
 
+// Check the square range of the hole aoi.
+void CheckRange (const FunctionCallbackInfo<Value>& args)
+{
+	Isolate* isolate = args.GetIsolate();
+
+	float x1, x2, y1, y2;
+	Local<Array> arr = Array::New(isolate);
+
+	if (x_tree.Range(&x1, &x2) && y_tree.Range(&y1, &y2))
+	{
+		arr->Set(0, Number::New(isolate, x1));
+		arr->Set(1, Number::New(isolate, x2));
+		arr->Set(2, Number::New(isolate, y1));
+		arr->Set(3, Number::New(isolate, y2));
+	}
+
+	args.GetReturnValue().Set(arr);
+
+}
+
 // Print the segment trees by layer.
 // The input arguments are passed using the "args".
 // @param[in]	args[0]		If print x coordinate. Can be NULL.
@@ -249,6 +269,7 @@ void init (Local<Object> exports)
 	NODE_SET_METHOD(exports, "remove", Remove);
 	NODE_SET_METHOD(exports, "search", Search);
 	NODE_SET_METHOD(exports, "update", Update);
+	NODE_SET_METHOD(exports, "range",  CheckRange);
 	NODE_SET_METHOD(exports, "print",  Print);
 }
 
