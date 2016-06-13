@@ -114,6 +114,17 @@ namespace ysd_bes_aoi
 		// @param[in]	new_val The new value after update.
 		bool Update (uint16_t id, float cur_val, float new_val)
 		{
+			// When there is only one node.
+			if (root_->id != kNonID)
+			{
+				if (root_->id == id)
+				{
+					root_->pos_start = new_val;
+					return true;
+				}
+				return false;
+			}
+
 			if (cur_val > root_->pos_end || cur_val < root_->pos_start)
 			{
 				return false;
@@ -130,7 +141,7 @@ namespace ysd_bes_aoi
 
 		bool Range (float* start, float* end) 
 		{
-			if (root_ == nullptr)
+			if (root_ == nullptr || root_->id != kNonID)
 			{
 				return false;
 			}
