@@ -1,4 +1,4 @@
-#aoi_segment_tree
+#aoi-segment-tree
 
 ###Introduction
 ---------------
