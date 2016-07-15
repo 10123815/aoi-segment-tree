@@ -2,7 +2,7 @@
 
 ###Introduction
 ---------------
-An aoi(area of interesting) lib written by c++ and privode nodejs API.</br>
+An aoi(area of interesting) lib written by c++ and provide nodejs API.</br>
 It use two segment trees to store x/y coordinates of players. Insert, remove, search, update to the tree is in O(logn).
 
 ###Build
